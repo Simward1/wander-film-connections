@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wander Film Connection Generator</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f0; color: #1a1a1a; min-height: 100vh; padding: 2rem 1rem; }
+  .app { max-width: 680px; margin: 0 auto; }
+  h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+  .subtitle { font-size: 14px; color: #666; margin-bottom: 1.5rem; }
+  .tab-row { display: flex; border-bottom: 1px solid #ddd; margin-bottom: 1.5rem; }
+  .tab { font-size: 14px; padding: 8px 16px; cursor: pointer; border: none; background: transparent; color: #888; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .tab.active { color: #1a1a1a; border-bottom-color: #1a1a1a; font-weight: 500; }
+  .search-row { display: flex; gap: 8px; margin-bottom: 1rem; }
+  .search-row input { flex: 1; padding: 8px 12px; font-size: 15px; border: 1px solid #ccc; border-radius: 8px; outline: none; }
+  .search-row input:focus { border-color: #888; }
+  .search-row button { padding: 8px 16px; font-size: 14px; border: 1px solid #ccc; border-radius: 8px; background: white; cursor: pointer; }
+  .search-row button:hover { background: #f0f0f0; }
+  .section-label { font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.06em; margin: 1.5rem 0 0.5rem; }
+  .film-card { background: white; border: 1px solid #e8e8e8; border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 8px; display: flex; align-items: flex-start; gap: 12px; }
+  .poster { width: 48px; height: 72px; border-radius: 4px; background: #eee; object-fit: cover; flex-shrink: 0; }
+  .poster-placeholder { width: 48px; height: 72px; border-radius: 4px; background: #eee; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+  .film-info { flex: 1; min-width: 0; }
+  .film-title { font-weight: 500; font-size: 15px; margin-bottom: 2px; }
+  .film-meta { font-size: 13px; color: #888; margin-bottom: 6px; }
+  .connection-tag { display: inline-block; font-size: 12px; padding: 2px 8px; border-radius: 6px; background: #e8f0fe; color: #1a56db; margin-right: 4px; margin-bottom: 4px; }
+  .btn-row { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .btn-sm { font-size: 12px; padding: 4px 10px; cursor: pointer; border: 1px solid #ccc; border-radius: 6px; background: transparent; color: #333; }
+  .btn-sm:hover { background: #f5f5f5; }
+  .btn-watched { border-color: #16a34a; color: #16a34a; }
+  .btn-select { border-color: #1a56db; color: #1a56db; }
+  .rating-badge { display: inline-flex; align-items: center; gap: 3px; font-size: 13px; font-weight: 500; }
+  .star { color: #e9a010; }
+  .status-msg { font-size: 14px; color: #888; padding: 1rem 0; }
+  .current-banner { background: white; border: 1px solid #e8e8e8; border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 12px; }
+  .watched-pill { display: inline-block; font-size: 11px; padding: 2px 7px; border-radius: 6px; background: #dcfce7; color: #16a34a; margin-left: 6px; }
+  .genre-tag { display: inline-block; font-size: 12px; padding: 2px 8px; border-radius: 6px; background: #f3f0ff; color: #6d28d9; margin-right: 4px; margin-bottom: 4px; }
+  .overview { font-size: 13px; color: #555; line-height: 1.5; margin: 6px 0; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .empty-state { text-align: center; padding: 2rem 0; color: #888; font-size: 14px; }
+  .empty-state .icon { font-size: 36px; margin-bottom: 8px; }
+  .filter-panel { background: white; border: 1px solid #e8e8e8; border-radius: 12px; padding: 0.875rem 1.25rem; margin-bottom: 1rem; }
+  .filter-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.625rem; }
+  .filter-title { font-size: 12px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.06em; }
+  .filter-actions { display: flex; gap: 8px; }
+  .filter-link { font-size: 12px; color: #1a56db; background: none; border: none; cursor: pointer; padding: 0; text-decoration: underline; }
+  .filter-link:hover { color: #1240a0; }
+  .filter-checkboxes { display: flex; flex-wrap: wrap; gap: 6px; }
+  .filter-checkbox-label { display: flex; align-items: center; gap: 5px; font-size: 13px; color: #333; background: #f8f7ff; border: 1px solid #e0dbff; border-radius: 6px; padding: 3px 10px 3px 7px; cursor: pointer; user-select: none; }
+  .filter-checkbox-label:hover { background: #f0ecff; }
+  .filter-checkbox-label input { accent-color: #6d28d9; cursor: pointer; }
+  .filter-checkbox-label.inactive { background: #f5f5f5; border-color: #e0e0e0; color: #aaa; }
+  .no-results-msg { font-size: 14px; color: #888; padding: 1rem 0; }
+  .refresh-bar { background: #fffbeb; border: 1px solid #fcd34d; border-radius: 10px; padding: 0.75rem 1rem; margin-top: 0.75rem; display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 13px; color: #92400e; }
+  .refresh-bar button { font-size: 12px; padding: 4px 12px; border: 1px solid #f59e0b; border-radius: 6px; background: white; color: #92400e; cursor: pointer; white-space: nowrap; }
+  .refresh-bar button:hover { background: #fef3c7; }
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>🎬 Wander Film Connection Generator</h1>
+  <p class="subtitle">Pick your next film based on cast &amp; crew links</p>
+
+  <div class="tab-row">
+    <button class="tab active" onclick="showTab('search')" id="tab-search">Find connections</button>
+    <button class="tab" onclick="showTab('watched')" id="tab-watched">Watched list</button>
+  </div>
+
+  <div id="view-search">
+    <div id="current-banner" style="display:none"></div>
+    <div class="search-row">
+      <input type="text" id="search-input" placeholder="Search for a film..." oninput="onInput()" onkeydown="if(event.key==='Enter')doSearch()" />
+      <button onclick="doSearch()">Search</button>
+    </div>
+    <div id="search-results"></div>
+    <div id="genre-filter" style="display:none"></div>
+    <div id="recommendations"></div>
+  </div>
+
+  <div id="view-watched" style="display:none">
+    <div id="watched-list"></div>
+  </div>
+</div>
+
+<script>
+const API_KEY = '138351686e8ff360cf32f00c4799001c';
+const BASE = 'https://api.themoviedb.org/3';
+const IMG = 'https://image.tmdb.org/t/p/w92';
+
+function getWatched() { try { return JSON.parse(localStorage.getItem('fc_watched') || '{}'); } catch(e) { return {}; } }
+function saveWatched(w) { localStorage.setItem('fc_watched', JSON.stringify(w)); }
+function getCurrentFilm() { try { return JSON.parse(localStorage.getItem('fc_current') || 'null'); } catch(e) { return null; } }
+function saveCurrentFilm(f) { localStorage.setItem('fc_current', JSON.stringify(f)); }
+
+let searchTimeout;
+function onInput() { clearTimeout(searchTimeout); searchTimeout = setTimeout(doSearch, 400); }
+
+async function doSearch() {
+  const q = document.getElementById('search-input').value.trim();
+  if (!q) { document.getElementById('search-results').innerHTML = ''; return; }
+  document.getElementById('search-results').innerHTML = '<p class="status-msg">Searching...</p>';
+  document.getElementById('recommendations').innerHTML = '';
+  try {
+    const r = await fetch(`${BASE}/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(q)}&language=en-US`);
+    const d = await r.json();
+    renderSearchResults(d.results || []);
+  } catch(e) {
+    document.getElementById('search-results').innerHTML = '<p class="status-msg">Search failed. Check your internet connection.</p>';
+  }
+}
+
+function renderSearchResults(films) {
+  const watched = getWatched();
+  if (!films.length) { document.getElementById('search-results').innerHTML = '<p class="status-msg">No films found.</p>'; return; }
+  document.getElementById('search-results').innerHTML = '<p class="section-label">Select the film you just watched</p>' +
+    films.slice(0,6).map(f => filmCard(f, watched, 'search')).join('');
+}
+
+function esc(s) { return (s||'').replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
+
+function filmCard(f, watched, mode) {
+  const isWatched = !!watched[f.id];
+  const year = f.release_date ? f.release_date.slice(0,4) : '';
+  const rating = f.vote_average ? `<span class="rating-badge"><span class="star">★</span> ${f.vote_average.toFixed(1)}</span>` : '';
+  const watchedTag = isWatched ? `<span class="watched-pill">✓ watched</span>` : '';
+  const poster = f.poster_path
+    ? `<img class="poster" src="${IMG}${f.poster_path}" alt="${f.title} poster" loading="lazy">`
+    : `<div class="poster-placeholder">🎬</div>`;
+  const connections = f._connections ? f._connections.map(c => `<span class="connection-tag">${c}</span>`).join('') : '';
+  const genres = f._genres ? f._genres.map(g => `<span class="genre-tag">${g}</span>`).join('') : '';
+  const overview = f.overview ? `<div class="overview">${f.overview}</div>` : '';
+  const tmdbUrl = `https://www.themoviedb.org/movie/${f.id}`;
+  const titleLink = `<a href="${tmdbUrl}" target="_blank" rel="noopener" title="View on TMDB">${f.title}</a>`;
+  let buttons = '';
+  if (mode === 'search') {
+    buttons = `<button class="btn-sm btn-select" onclick="selectAsCurrentFilm(${f.id}, '${esc(f.title)}', '${esc(f.poster_path||'')}', '${year}')">Set as current film</button>
+      ${isWatched ? '' : `<button class="btn-sm btn-watched" onclick="markWatched(${f.id}, '${esc(f.title)}', '${esc(f.poster_path||'')}', '${year}')">Mark as watched</button>`}`;
+  } else if (mode === 'rec') {
+    buttons = isWatched ? '<span style="font-size:12px;color:#888">Already watched</span>'
+      : `<button class="btn-sm btn-watched" onclick="markWatched(${f.id}, '${esc(f.title)}', '${esc(f.poster_path||'')}', '${year}')">Mark as watched</button>`;
+  }
+  return `<div class="film-card" id="fc-${f.id}">
+    ${poster}
+    <div class="film-info">
+      <div class="film-title">${titleLink}${watchedTag}</div>
+      <div class="film-meta">${year}${rating ? ' &nbsp;' + rating : ''}</div>
+      ${genres}
+      ${overview}
+      ${connections}
+      <div class="btn-row">${buttons}</div>
+    </div>
+  </div>`;
+}
+
+async function selectAsCurrentFilm(id, title, poster, year) {
+  saveCurrentFilm({ id, title, poster });
+  const watched = getWatched();
+  if (!watched[id]) {
+    watched[id] = { id, title, poster, year, addedAt: Date.now() };
+    saveWatched(watched);
+  }
+  document.getElementById('search-input').value = '';
+  document.getElementById('search-results').innerHTML = '';
+  renderCurrentBanner();
+  await loadRecommendations(id);
+}
+
+function renderCurrentBanner() {
+  const f = getCurrentFilm();
+  const banner = document.getElementById('current-banner');
+  if (!f) { banner.style.display = 'none'; return; }
+  banner.style.display = 'flex';
+  banner.innerHTML = `<div><div style="font-size:12px;color:#888;margin-bottom:2px">Current film</div><div style="font-size:15px;font-weight:500">🎬 ${f.title}</div></div>
+    <div style="margin-left:auto"><button class="btn-sm" onclick="clearCurrentFilm()">Change film</button></div>`;
+}
+
+function clearCurrentFilm() {
+  localStorage.removeItem('fc_current');
+  document.getElementById('current-banner').style.display = 'none';
+  document.getElementById('recommendations').innerHTML = '';
+  document.getElementById('search-input').value = '';
+}
+
+async function loadRecommendations(movieId, preservedTicked = null) {
+  const el = document.getElementById('recommendations');
+  el.innerHTML = '<p class="status-msg">Finding connections — this may take a few seconds...</p>';
+  try {
+    const cr = await fetch(`${BASE}/movie/${movieId}/credits?api_key=${API_KEY}`);
+    const credits = await cr.json();
+    const cast = (credits.cast || []).map(p => ({ id: p.id, name: p.name }));
+    const crew = (credits.crew || []).filter(p => ['Director','Director of Photography','Cinematographer','Composer','Writer','Screenplay'].includes(p.job)).map(p => ({ id: p.id, name: p.name }));
+    const people = [...cast, ...crew].filter((p, i, arr) => arr.findIndex(x => x.id === p.id) === i);
+
+    const watched = getWatched();
+    const filmScores = {}, filmConnections = {}, filmData = {};
+
+    const BATCH = 10;
+    for (let i = 0; i < people.length; i += BATCH) {
+      await Promise.all(people.slice(i, i + BATCH).map(async person => {
+      try {
+        const pr = await fetch(`${BASE}/person/${person.id}/movie_credits?api_key=${API_KEY}`);
+        const pd = await pr.json();
+        [...(pd.cast||[]), ...(pd.crew||[])].forEach(m => {
+          if (m.id === movieId) return;
+          if (!m.vote_average || m.vote_average < 5.5) return;
+          if (!m.vote_count || m.vote_count < 200) return;
+          if (!filmScores[m.id]) { filmScores[m.id] = 0; filmConnections[m.id] = []; filmData[m.id] = m; }
+          filmScores[m.id] += m.vote_average;
+          filmConnections[m.id].push(person.name);
+        });
+      } catch(e) {}
+      }));
+    }
+
+    const sorted = Object.keys(filmScores)
+      .map(id => ({ ...filmData[id], _score: filmScores[id], _connections: [...new Set(filmConnections[id])].slice(0,3) }))
+      .filter(f => !watched[f.id])
+      .sort((a,b) => b.vote_average - a.vote_average);
+
+    if (!sorted.length) { el.innerHTML = '<p class="status-msg">No recommendations found. Try a different film.</p>'; return; }
+
+    let detailsDone = 0;
+    const DBATCH = 10;
+    for (let i = 0; i < sorted.length; i += DBATCH) {
+      await Promise.all(sorted.slice(i, i + DBATCH).map(async film => {
+        try {
+          const dr = await fetch(`${BASE}/movie/${film.id}?api_key=${API_KEY}&language=en-US`);
+          const dd = await dr.json();
+          film._genres = (dd.genres || []).slice(0,3).map(g => g.name);
+          film.overview = dd.overview || '';
+          film.poster_path = film.poster_path || dd.poster_path || '';
+        } catch(e) {}
+        detailsDone++;
+        el.innerHTML = `<p class="status-msg">Loading film details… ${detailsDone} of ${sorted.length}</p>`;
+      }));
+    }
+
+    allRecommendations = sorted;
+    renderGenreFilter(sorted);
+    el.innerHTML = '<p class="section-label">Recommended next films</p>' + sorted.map(f => filmCard(f, getWatched(), 'rec')).join('');
+    if (preservedTicked) {
+      document.querySelectorAll('#genre-filter input[type=checkbox]').forEach(cb => {
+        cb.checked = preservedTicked.has(cb.value);
+      });
+      applyGenreFilter();
+    }
+  } catch(e) {
+    el.innerHTML = '<p class="status-msg">Could not load recommendations. Please try again.</p>';
+  }
+}
+
+let allRecommendations = [];
+
+function renderGenreFilter(films) {
+  const genreSet = new Set();
+  films.forEach(f => (f._genres || []).forEach(g => genreSet.add(g)));
+  const genres = [...genreSet].sort();
+  const el = document.getElementById('genre-filter');
+  if (!genres.length) { el.style.display = 'none'; return; }
+  el.style.display = '';
+  el.innerHTML = `<div class="filter-panel">
+    <div class="filter-header">
+      <span class="filter-title">Filter by genre</span>
+      <div class="filter-actions">
+        <button class="filter-link" onclick="setAllGenres(true)">Select all</button>
+        <button class="filter-link" onclick="setAllGenres(false)">Clear all</button>
+      </div>
+    </div>
+    <div class="filter-checkboxes">
+      ${genres.map(g => `<label class="filter-checkbox-label" id="flabel-${CSS.escape(g)}">
+        <input type="checkbox" checked value="${g}" onchange="applyGenreFilter()"> ${g}
+      </label>`).join('')}
+    </div>
+  </div>`;
+}
+
+function applyGenreFilter() {
+  const checked = new Set(
+    [...document.querySelectorAll('#genre-filter input[type=checkbox]:checked')].map(cb => cb.value)
+  );
+  const unchecked = new Set(
+    [...document.querySelectorAll('#genre-filter input[type=checkbox]:not(:checked)')].map(cb => cb.value)
+  );
+  unchecked.forEach(g => {
+    const label = document.getElementById(`flabel-${CSS.escape(g)}`);
+    if (label) label.classList.add('inactive');
+  });
+  checked.forEach(g => {
+    const label = document.getElementById(`flabel-${CSS.escape(g)}`);
+    if (label) label.classList.remove('inactive');
+  });
+  let visibleCount = 0;
+  allRecommendations.forEach(f => {
+    const card = document.getElementById(`fc-${f.id}`);
+    if (!card) return;
+    const filmGenres = f._genres || [];
+    const show = filmGenres.length === 0 || filmGenres.some(g => checked.has(g));
+    card.style.display = show ? '' : 'none';
+    if (show) visibleCount++;
+  });
+  const noResults = document.getElementById('filter-no-results');
+  const refreshBar = document.getElementById('filter-refresh-bar');
+  if (visibleCount === 0) {
+    if (!noResults) {
+      const msg = document.createElement('p');
+      msg.id = 'filter-no-results';
+      msg.className = 'no-results-msg';
+      msg.textContent = 'No films match the selected genres. Try ticking more genres above.';
+      document.getElementById('recommendations').appendChild(msg);
+    }
+    if (refreshBar) refreshBar.remove();
+  } else {
+    if (noResults) noResults.remove();
+    if (visibleCount < 10) {
+      if (!refreshBar) {
+        const bar = document.createElement('div');
+        bar.id = 'filter-refresh-bar';
+        bar.className = 'refresh-bar';
+        bar.innerHTML = `<span>Only ${visibleCount} result${visibleCount !== 1 ? 's' : ''} match your genre filter.</span>
+          <button onclick="refreshFromCurrentFilm()">Load a wider search</button>`;
+        document.getElementById('recommendations').appendChild(bar);
+      } else {
+        refreshBar.querySelector('span').textContent = `Only ${visibleCount} result${visibleCount !== 1 ? 's' : ''} match your genre filter.`;
+      }
+    } else {
+      if (refreshBar) refreshBar.remove();
+    }
+  }
+}
+
+function setAllGenres(checked) {
+  document.querySelectorAll('#genre-filter input[type=checkbox]').forEach(cb => cb.checked = checked);
+  applyGenreFilter();
+}
+
+function refreshFromCurrentFilm() {
+  const cur = getCurrentFilm();
+  if (!cur) return;
+  const ticked = new Set(
+    [...document.querySelectorAll('#genre-filter input[type=checkbox]:checked')].map(cb => cb.value)
+  );
+  loadRecommendations(cur.id, ticked);
+}
+
+function markWatched(id, title, poster, year) {
+  const watched = getWatched();
+  watched[id] = { id, title, poster, year, addedAt: Date.now() };
+  saveWatched(watched);
+  const card = document.getElementById(`fc-${id}`);
+  if (card) card.remove();
+  renderWatchedList();
+}
+
+function renderWatchedList() {
+  const watched = getWatched();
+  const el = document.getElementById('watched-list');
+  const items = Object.values(watched).sort((a,b) => b.addedAt - a.addedAt);
+  if (!items.length) { el.innerHTML = '<div class="empty-state"><div class="icon">🎬</div>No films marked as watched yet.</div>'; return; }
+  el.innerHTML = `<p class="section-label">${items.length} film${items.length!==1?'s':''} watched</p>` +
+    items.map(f => {
+      const poster = f.poster ? `<img class="poster" src="${IMG}${f.poster}" alt="${f.title}" loading="lazy">` : `<div class="poster-placeholder">🎬</div>`;
+      return `<div class="film-card" id="fc-${f.id}">${poster}
+        <div class="film-info">
+          <div class="film-title">${f.title} <span class="watched-pill">✓ watched</span></div>
+          <div class="film-meta">${f.year || ''}</div>
+          <div class="btn-row"><button class="btn-sm" onclick="removeWatched(${f.id})">Remove from watched</button></div>
+        </div></div>`;
+    }).join('');
+}
+
+function removeWatched(id) {
+  const watched = getWatched();
+  delete watched[id];
+  saveWatched(watched);
+  renderWatchedList();
+}
+
+function showTab(tab) {
+  document.getElementById('view-search').style.display = tab === 'search' ? '' : 'none';
+  document.getElementById('view-watched').style.display = tab === 'watched' ? '' : 'none';
+  document.getElementById('tab-search').className = 'tab' + (tab === 'search' ? ' active' : '');
+  document.getElementById('tab-watched').className = 'tab' + (tab === 'watched' ? ' active' : '');
+  if (tab === 'watched') renderWatchedList();
+}
+
+renderCurrentBanner();
+const cur = getCurrentFilm();
+if (cur) loadRecommendations(cur.id);
+</script>
+</body>
+</html>
