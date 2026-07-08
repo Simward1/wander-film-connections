@@ -55,6 +55,36 @@
   .refresh-bar { background: #fffbeb; border: 1px solid #fcd34d; border-radius: 10px; padding: 0.75rem 1rem; margin-top: 0.75rem; display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 13px; color: #92400e; }
   .refresh-bar button { font-size: 12px; padding: 4px 12px; border: 1px solid #f59e0b; border-radius: 6px; background: white; color: #92400e; cursor: pointer; white-space: nowrap; }
   .refresh-bar button:hover { background: #fef3c7; }
+  .mode-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; flex-wrap: wrap; }
+  .mode-label { font-size: 12px; color: #888; }
+  .btn-mode { font-size: 13px; padding: 6px 14px; border-radius: 8px; cursor: pointer; border: 1px solid #ccc; background: white; color: #555; }
+  .btn-mode:hover { background: #f5f5f5; }
+  .btn-mode.active { background: #1a1a1a; color: white; border-color: #1a1a1a; font-weight: 500; }
+  .btn-mode-advanced { border-color: #6d28d9; color: #6d28d9; }
+  .btn-mode-advanced:hover { background: #f3f0ff; }
+  .btn-mode-advanced.active { background: #6d28d9; color: white; border-color: #6d28d9; }
+  .results-mode-tag { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; padding: 2px 8px; border-radius: 4px; margin-left: 8px; }
+  .results-mode-tag.quick { background: #e8f0fe; color: #1a56db; }
+  .results-mode-tag.advanced { background: #f3f0ff; color: #6d28d9; }
+  .exclude-section { margin-bottom: 1rem; }
+  .exclude-toggle { font-size: 12px; color: #6d28d9; background: none; border: none; cursor: pointer; padding: 0; text-decoration: underline; display: block; margin-bottom: 6px; }
+  .exclude-toggle:hover { color: #4c1d95; }
+  .exclude-search-row { display: flex; gap: 6px; margin-bottom: 6px; }
+  .exclude-search-row input { flex: 1; padding: 6px 10px; font-size: 13px; border: 1px solid #c4b5fd; border-radius: 8px; outline: none; }
+  .exclude-search-row input:focus { border-color: #6d28d9; }
+  .exclude-search-row button { padding: 6px 12px; font-size: 12px; border: 1px solid #6d28d9; border-radius: 8px; background: white; color: #6d28d9; cursor: pointer; }
+  .exclude-search-row button:hover { background: #f3f0ff; }
+  .exclude-dropdown { background: white; border: 1px solid #e8e8e8; border-radius: 10px; overflow: hidden; margin-bottom: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .exclude-person { display: flex; align-items: center; gap: 10px; padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #f0f0f0; }
+  .exclude-person:last-child { border-bottom: none; }
+  .exclude-person:hover { background: #f8f7ff; }
+  .exclude-avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; background: #eee; flex-shrink: 0; }
+  .exclude-avatar-placeholder { width: 36px; height: 36px; border-radius: 50%; background: #eee; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+  .exclude-person-name { font-size: 13px; font-weight: 500; }
+  .exclude-person-known { font-size: 12px; color: #888; }
+  .exclude-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
+  .exclude-pill { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; padding: 3px 8px; border-radius: 6px; background: #ede9fe; color: #5b21b6; border: 1px solid #c4b5fd; }
+  .exclude-pill button { background: none; border: none; cursor: pointer; color: #7c3aed; font-size: 13px; padding: 0; line-height: 1; }
 </style>
 </head>
 <body>
@@ -69,12 +99,18 @@
 
   <div id="view-search">
     <div id="current-banner" style="display:none"></div>
+    <div id="mode-bar" style="display:none" class="mode-bar">
+      <span class="mode-label">Search mode:</span>
+      <button class="btn-mode active" id="btn-quick" onclick="setMode('quick')">⚡ Quick search</button>
+      <button class="btn-mode btn-mode-advanced" id="btn-advanced" onclick="setMode('advanced')">🔍 Advanced search</button>
+    </div>
     <div class="search-row">
       <input type="text" id="search-input" placeholder="Search for a film..." oninput="onInput()" onkeydown="if(event.key==='Enter')doSearch()" />
       <button onclick="doSearch()">Search</button>
     </div>
     <div id="search-results"></div>
     <div id="genre-filter" style="display:none"></div>
+    <div id="exclude-section" style="display:none" class="exclude-section"></div>
     <div id="recommendations"></div>
   </div>
 
@@ -162,8 +198,10 @@ async function selectAsCurrentFilm(id, title, poster, year) {
   }
   document.getElementById('search-input').value = '';
   document.getElementById('search-results').innerHTML = '';
+  document.getElementById('genre-filter').style.display = 'none';
+  document.getElementById('mode-bar').style.display = 'flex';
+  setMode('quick');
   renderCurrentBanner();
-  await loadRecommendations(id);
 }
 
 function renderCurrentBanner() {
@@ -177,9 +215,169 @@ function renderCurrentBanner() {
 
 function clearCurrentFilm() {
   localStorage.removeItem('fc_current');
+  excludedPeople = [];
   document.getElementById('current-banner').style.display = 'none';
+  document.getElementById('mode-bar').style.display = 'none';
+  document.getElementById('genre-filter').style.display = 'none';
+  document.getElementById('exclude-section').style.display = 'none';
   document.getElementById('recommendations').innerHTML = '';
   document.getElementById('search-input').value = '';
+}
+
+let currentMode = 'quick';
+
+function setMode(mode) {
+  currentMode = mode;
+  document.getElementById('btn-quick').className = 'btn-mode' + (mode === 'quick' ? ' active' : '');
+  document.getElementById('btn-advanced').className = 'btn-mode btn-mode-advanced' + (mode === 'advanced' ? ' active' : '');
+  document.getElementById('genre-filter').style.display = 'none';
+  document.getElementById('exclude-section').style.display = 'none';
+  const cur = getCurrentFilm();
+  if (!cur) return;
+  if (mode === 'quick') {
+    quickSearch(cur.id);
+  } else {
+    loadRecommendations(cur.id);
+  }
+}
+
+async function quickSearch(movieId) {
+  const el = document.getElementById('recommendations');
+  el.innerHTML = '<p class="status-msg">Finding connections...</p>';
+  try {
+    const cr = await fetch(`${BASE}/movie/${movieId}/credits?api_key=${API_KEY}`);
+    const credits = await cr.json();
+    const cast = (credits.cast || []).slice(0,15).map(p => ({ id: p.id, name: p.name }));
+    const crew = (credits.crew || []).filter(p => ['Director','Director of Photography','Cinematographer','Composer','Writer','Screenplay'].includes(p.job)).slice(0,5).map(p => ({ id: p.id, name: p.name }));
+    const people = [...cast, ...crew].filter((p, i, arr) => arr.findIndex(x => x.id === p.id) === i);
+
+    const watched = getWatched();
+    const filmScores = {}, filmConnections = {}, filmData = {};
+
+    await Promise.all(people.map(async person => {
+      try {
+        const pr = await fetch(`${BASE}/person/${person.id}/movie_credits?api_key=${API_KEY}`);
+        const pd = await pr.json();
+        [...(pd.cast||[]), ...(pd.crew||[])].forEach(m => {
+          if (m.id === movieId) return;
+          if (!m.vote_average || m.vote_average < 5.5) return;
+          if (!m.vote_count || m.vote_count < 200) return;
+          if (!filmScores[m.id]) { filmScores[m.id] = 0; filmConnections[m.id] = []; filmData[m.id] = m; }
+          filmScores[m.id] += m.vote_average;
+          filmConnections[m.id].push(person.name);
+        });
+      } catch(e) {}
+    }));
+
+    const sorted = Object.keys(filmScores)
+      .map(id => ({ ...filmData[id], _score: filmScores[id], _connections: [...new Set(filmConnections[id])].slice(0,3) }))
+      .filter(f => !watched[f.id])
+      .sort((a,b) => b.vote_average - a.vote_average)
+      .slice(0,20);
+
+    if (!sorted.length) { el.innerHTML = '<p class="status-msg">No recommendations found. Try advanced search for more results.</p>'; return; }
+
+    el.innerHTML = '<p class="status-msg">Loading overviews...</p>';
+    await Promise.all(sorted.map(async film => {
+      try {
+        const dr = await fetch(`${BASE}/movie/${film.id}?api_key=${API_KEY}&language=en-US`);
+        const dd = await dr.json();
+        film.overview = dd.overview || '';
+        film.poster_path = film.poster_path || dd.poster_path || '';
+      } catch(e) {}
+    }));
+
+    el.innerHTML = `<p class="section-label">Quick search results <span class="results-mode-tag quick">Quick</span></p>` +
+      sorted.map(f => filmCard(f, getWatched(), 'rec')).join('');
+  } catch(e) {
+    el.innerHTML = '<p class="status-msg">Could not load recommendations. Please try again.</p>';
+  }
+}
+
+let excludedPeople = []; // { id, name }
+let excludeSearchTimeout;
+
+function renderExcludeSection() {
+  const el = document.getElementById('exclude-section');
+  el.style.display = '';
+  const pills = excludedPeople.map(p =>
+    `<span class="exclude-pill">${p.name} <button onclick="removeExclusion(${p.id})" title="Remove">✕</button></span>`
+  ).join('');
+  el.innerHTML = `
+    ${pills ? `<div class="exclude-pills">${pills}</div>` : ''}
+    <button class="exclude-toggle" onclick="toggleExcludeSearch()">+ Exclude a connection</button>
+    <div id="exclude-search-box" style="display:none">
+      <div class="exclude-search-row">
+        <input type="text" id="exclude-input" placeholder="Search for a person..." oninput="onExcludeInput()" />
+        <button onclick="closeExcludeSearch()">Cancel</button>
+      </div>
+      <div id="exclude-dropdown"></div>
+    </div>`;
+}
+
+function toggleExcludeSearch() {
+  const box = document.getElementById('exclude-search-box');
+  if (!box) return;
+  box.style.display = box.style.display === 'none' ? '' : 'none';
+  if (box.style.display !== 'none') document.getElementById('exclude-input').focus();
+}
+
+function closeExcludeSearch() {
+  const box = document.getElementById('exclude-search-box');
+  if (box) box.style.display = 'none';
+  const dd = document.getElementById('exclude-dropdown');
+  if (dd) dd.innerHTML = '';
+}
+
+function onExcludeInput() {
+  clearTimeout(excludeSearchTimeout);
+  excludeSearchTimeout = setTimeout(searchPeople, 400);
+}
+
+async function searchPeople() {
+  const q = document.getElementById('exclude-input').value.trim();
+  const dd = document.getElementById('exclude-dropdown');
+  if (!q) { dd.innerHTML = ''; return; }
+  dd.innerHTML = '<p class="status-msg" style="font-size:12px;padding:6px 0">Searching...</p>';
+  try {
+    const r = await fetch(`${BASE}/search/person?api_key=${API_KEY}&query=${encodeURIComponent(q)}&language=en-US`);
+    const d = await r.json();
+    const results = (d.results || []).slice(0,5);
+    if (!results.length) { dd.innerHTML = '<p class="status-msg" style="font-size:12px;padding:6px 0">No people found.</p>'; return; }
+    dd.innerHTML = `<div class="exclude-dropdown">` + results.map(p => {
+      const avatar = p.profile_path
+        ? `<img class="exclude-avatar" src="https://image.tmdb.org/t/p/w45${p.profile_path}" alt="${p.name}">`
+        : `<div class="exclude-avatar-placeholder">👤</div>`;
+      const known = p.known_for_department || '';
+      const knownFor = (p.known_for || []).slice(0,2).map(k => k.title || k.name).join(', ');
+      return `<div class="exclude-person" onclick="addExclusion(${p.id}, '${esc(p.name)}')">
+        ${avatar}
+        <div>
+          <div class="exclude-person-name">${p.name}</div>
+          <div class="exclude-person-known">${known}${knownFor ? ' · ' + knownFor : ''}</div>
+        </div>
+      </div>`;
+    }).join('') + `</div>`;
+  } catch(e) {
+    dd.innerHTML = '<p class="status-msg" style="font-size:12px;padding:6px 0">Search failed.</p>';
+  }
+}
+
+function addExclusion(id, name) {
+  if (excludedPeople.find(p => p.id === id)) return;
+  excludedPeople.push({ id, name });
+  closeExcludeSearch();
+  document.getElementById('exclude-input').value = '';
+  renderExcludeSection();
+  const cur = getCurrentFilm();
+  if (cur) loadRecommendations(cur.id);
+}
+
+function removeExclusion(id) {
+  excludedPeople = excludedPeople.filter(p => p.id !== id);
+  renderExcludeSection();
+  const cur = getCurrentFilm();
+  if (cur) loadRecommendations(cur.id);
 }
 
 async function loadRecommendations(movieId, preservedTicked = null) {
@@ -190,7 +388,10 @@ async function loadRecommendations(movieId, preservedTicked = null) {
     const credits = await cr.json();
     const cast = (credits.cast || []).map(p => ({ id: p.id, name: p.name }));
     const crew = (credits.crew || []).filter(p => ['Director','Director of Photography','Cinematographer','Composer','Writer','Screenplay'].includes(p.job)).map(p => ({ id: p.id, name: p.name }));
-    const people = [...cast, ...crew].filter((p, i, arr) => arr.findIndex(x => x.id === p.id) === i);
+    const excludedIds = new Set(excludedPeople.map(p => p.id));
+    const people = [...cast, ...crew]
+      .filter((p, i, arr) => arr.findIndex(x => x.id === p.id) === i)
+      .filter(p => !excludedIds.has(p.id));
 
     const watched = getWatched();
     const filmScores = {}, filmConnections = {}, filmData = {};
@@ -238,7 +439,8 @@ async function loadRecommendations(movieId, preservedTicked = null) {
 
     allRecommendations = sorted;
     renderGenreFilter(sorted);
-    el.innerHTML = '<p class="section-label">Recommended next films</p>' + sorted.map(f => filmCard(f, getWatched(), 'rec')).join('');
+    renderExcludeSection();
+    el.innerHTML = `<p class="section-label">Advanced search results <span class="results-mode-tag advanced">Advanced</span></p>` + sorted.map(f => filmCard(f, getWatched(), 'rec')).join('');
     if (preservedTicked) {
       document.querySelectorAll('#genre-filter input[type=checkbox]').forEach(cb => {
         cb.checked = preservedTicked.has(cb.value);
@@ -386,7 +588,10 @@ function showTab(tab) {
 
 renderCurrentBanner();
 const cur = getCurrentFilm();
-if (cur) loadRecommendations(cur.id);
+if (cur) {
+  document.getElementById('mode-bar').style.display = 'flex';
+  quickSearch(cur.id);
+}
 </script>
 </body>
 </html>
