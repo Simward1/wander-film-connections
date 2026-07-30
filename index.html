@@ -246,16 +246,8 @@ async function selectAsCurrentFilm(id, title, poster, year) {
   document.getElementById('search-results').innerHTML = '';
   document.getElementById('genre-filter').style.display = 'none';
   document.getElementById('mode-bar').style.display = 'flex';
-  setMode('quick');
-setTimeout(() => {
-  const splash = document.getElementById('splash');
-  if (splash) {
-    splash.style.opacity = '0';
-    setTimeout(() => splash.remove(), 300);
-  }
-}, 1000);
-  renderCurrentBanner();
-}
+ setMode('quick');
+renderCurrentBanner();}
 
 function renderCurrentBanner() {
   const f = getCurrentFilm();
@@ -639,9 +631,17 @@ function showTab(tab) {
   if (tab === 'watched') renderWatchedList();
 }
 
+setTimeout(() => {
+  const splash = document.getElementById('splash');
+  if (splash) {
+    splash.style.opacity = '0';
+    setTimeout(() => splash.remove(), 300);
+  }
+}, 1000);
+
 renderCurrentBanner();
 const cur = getCurrentFilm();
-if (cur) {
+ if (cur) {
   document.getElementById('mode-bar').style.display = 'flex';
   quickSearch(cur.id);
 }
