@@ -1,0 +1,18 @@
+{
+  "name": "Wander Film Connection Generator",
+  "short_name": "Connections",
+  "description": "Pick your next film based on cast and crew connections",
+  "start_url": "/wander-film-connections/",
+  "display": "standalone",
+  "background_color": "#1c1c2e",
+  "theme_color": "#1c1c2e",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
