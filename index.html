@@ -195,7 +195,7 @@ function filmCard(f, watched, mode) {
   const poster = f.poster_path
     ? `<img class="poster" src="${IMG}${f.poster_path}" alt="${f.title} poster" loading="lazy">`
     : `<div class="poster-placeholder">🎬</div>`;
-  const connections = f._connections ? f._connections.map(c => `<span class="connection-tag">${c}</span>`).join('') : '';
+  const connections = f._connections ? f._connections.map(c => `<a class="connection-tag" href="https://www.themoviedb.org/person/${c.id}" target="_blank" rel="noopener">${c.name}</a>`).join('') : '';
   const genres = f._genres ? f._genres.map(g => `<span class="genre-tag">${g}</span>`).join('') : '';
   const overview = f.overview ? `<div class="overview">${f.overview}</div>` : '';
   const tmdbUrl = `https://www.themoviedb.org/movie/${f.id}`;
@@ -296,13 +296,13 @@ async function quickSearch(movieId) {
           if (!m.vote_count || m.vote_count < 200) return;
           if (!filmScores[m.id]) { filmScores[m.id] = 0; filmConnections[m.id] = []; filmData[m.id] = m; }
           filmScores[m.id] += m.vote_average;
-          filmConnections[m.id].push(person.name);
+          filmConnections[m.id].push({ id: person.id, name: person.name });
         });
       } catch(e) {}
     }));
 
     const sorted = Object.keys(filmScores)
-      .map(id => ({ ...filmData[id], _score: filmScores[id], _connections: [...new Set(filmConnections[id])].slice(0,3) }))
+      .map(id => ({ ...filmData[id], _score: filmScores[id], _connections: [...new Map(filmConnections[id].map(p => [p.id, p])).values()].slice(0,3) }))
       .filter(f => !watched[f.id])
       .sort((a,b) => b.vote_average - a.vote_average)
       .slice(0,20);
@@ -440,14 +440,14 @@ async function loadRecommendations(movieId, preservedTicked = null) {
           if (!m.vote_count || m.vote_count < 200) return;
           if (!filmScores[m.id]) { filmScores[m.id] = 0; filmConnections[m.id] = []; filmData[m.id] = m; }
           filmScores[m.id] += m.vote_average;
-          filmConnections[m.id].push(person.name);
+          filmConnections[m.id].push({ id: person.id, name: person.name });
         });
       } catch(e) {}
       }));
     }
 
     const sorted = Object.keys(filmScores)
-      .map(id => ({ ...filmData[id], _score: filmScores[id], _connections: [...new Set(filmConnections[id])].slice(0,3) }))
+      .map(id => ({ ...filmData[id], _score: filmScores[id], _connections: [...new Map(filmConnections[id].map(p => [p.id, p])).values()].slice(0,3) }))
       .filter(f => !watched[f.id])
       .sort((a,b) => b.vote_average - a.vote_average);
 
