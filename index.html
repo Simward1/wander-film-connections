@@ -309,7 +309,7 @@ async function quickSearch(movieId) {
           if (!m.vote_count || m.vote_count < 200) return;
           if (!filmScores[m.id]) { filmScores[m.id] = 0; filmConnections[m.id] = []; filmData[m.id] = m; }
           filmScores[m.id] += m.vote_average;
-          filmConnections[m.id].push({ id: person.id, name: person.name });
+filmConnections[m.id].push({ id: person.id, name: person.name, role: m.character || m.job || '' });
         });
       } catch(e) {}
     }));
@@ -453,7 +453,7 @@ async function loadRecommendations(movieId, preservedTicked = null) {
           if (!m.vote_count || m.vote_count < 200) return;
           if (!filmScores[m.id]) { filmScores[m.id] = 0; filmConnections[m.id] = []; filmData[m.id] = m; }
           filmScores[m.id] += m.vote_average;
-          filmConnections[m.id].push({ id: person.id, name: person.name });
+filmConnections[m.id].push({ id: person.id, name: person.name, role: m.character || m.job || '' });
         });
       } catch(e) {}
       }));
